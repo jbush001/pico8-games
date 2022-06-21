@@ -1,7 +1,10 @@
 pico-8 cartridge // http://www.pico-8.com
 version 29
 __lua__
--- cannon control
+-- cannon control and main loop
+-- todo:
+--   make cannon barrel thicker
+
 
 c_angle = 0
 max_angle = 0.15
@@ -95,6 +98,8 @@ end
 
 -->8
 -- choppers
+-- todo:
+--  fix so these can't overlap
 
 chopper = {
 	anim_index = 0,
@@ -117,9 +122,9 @@ function chopper:create()
 	
 	-- dont drop on turret
 	if flr(rnd(2)) == 0 then
-	 ch.drop_x = flr(rnd(48))
+	 ch.drop_x = flr(rnd(6)) * 8
 	else
-  ch.drop_x = flr(rnd(40)) + 74
+  ch.drop_x = (flr(rnd(5)) * 8) + 2
 	end
 	return ch
 end
@@ -131,7 +136,7 @@ function chopper:update()
 		 and b.y >= self.y 
 		 and b.x < self.x + 16 
 		 and b.y < self.y + 16 then
-			-- hit
+			-- hit by bullet
 			sfx(1)
 			b.live = false
 			if self.facing == 1 then
@@ -153,13 +158,13 @@ function chopper:update()
 	if self.facing == 0 then
 	 self.x = self.x - chopper_speed
 	 if self.x < self.drop_x and not self.dropped then
-    spawn_paratrooper(self.x, self.y + 16)
+    spawn_paratrooper(self.drop_x, self.y + 16)
     self.dropped = true
 	 end	 
 	else
 	 self.x = self.x + chopper_speed
 	 if self.x > self.drop_x and not self.dropped then
-    spawn_paratrooper(self.x, self.y + 16)
+    spawn_paratrooper(self.drop_x, self.y + 16)
     self.dropped = true
 	 end	 
 	end
@@ -278,6 +283,11 @@ end
 
 -->8
 -- paratroopers
+-- todo:
+--  if a paratrooper lands on another, stack
+--  when four paratroopers are on a side, animate them blowing up turett
+--  if a paratrooper falls on another one, kill the one on the ground
+
 para_state = {
  initial = 1,
  deployed = 2,
