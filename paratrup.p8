@@ -125,6 +125,30 @@ function chopper:create()
 end
 
 function chopper:update()
+	for _, b in pairs(bullets) do
+		if b.live 
+		 and b.x >= self.x 
+		 and b.y >= self.y 
+		 and b.x < self.x + 16 
+		 and b.y < self.y + 16 then
+			-- hit
+			sfx(1)
+			b.live = false
+			if self.facing == 1 then
+			 xv  = 1
+			else
+			 xv = -1
+			end
+			for i = 1,4 do
+				spawn_wreckage(
+				 self.x + rnd(12), 
+				 self.y + rnd(12), 
+				 xv * (rnd(2) + chopper_speed))
+			end
+			return false
+		end
+	end
+
 	self.anim_index = 1 - self.anim_index
 	if self.facing == 0 then
 	 self.x = self.x - chopper_speed
@@ -156,8 +180,6 @@ function init_choppers()
 end
 
 function update_choppers()
-	check_chopper_collision()
-
  for i = #choppers, 1, -1 do
    if not choppers[i]:update() then
     kill_chopper(choppers[i])
@@ -209,28 +231,6 @@ function respawn_chopper()
 	end 
 end
 
-function check_chopper_collision() 
-	for _, b in pairs(bullets) do
-		if b.live then
-			for i = #choppers, 1, -1 do
-			 if b.x >= ch.x and b.y >= ch.y and b.x < ch.x + 16 and b.y < ch.y + 16 then
-					-- hit
-					sfx(1)
-					b.live = false
-					if ch.facing == 1 then
-					 xv  = 1
-					else
-					 xv = -1
-					end
-					for i = 1,4 do
-						spawn_wreckage(ch.x + rnd(12), ch.y + rnd(12), xv * (rnd(2) + chopper_speed))
-					end
-					kill_chopper(ch)
-				end
-		 end	
-		end
-	end
-end
 
 -->8
 -- wreckage
@@ -365,7 +365,6 @@ function draw_paras()
 		end
 	end
 end
-
 
 __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
