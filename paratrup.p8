@@ -9,6 +9,7 @@ angle_step = max_angle / 16
 bullets = {}
 game_over = false
 score = 0
+gun_pivot_y = 115
 
 function _init()
 	for i=1,10,1 do
@@ -58,7 +59,9 @@ end
 function _draw()
  cls()
  print(score, 5, 5)
-	line(64, 128, 64 - sin(c_angle) * 8, 128 - cos(c_angle) * 8, 15)
+	line(64, gun_pivot_y, 64 - sin(c_angle) * 8, gun_pivot_y - cos(c_angle) * 8, 15)
+	circfill(64, gun_pivot_y, 4)
+	rectfill(54, gun_pivot_y, 74, 128)
 	for _, b in pairs(bullets) do
 		if b.live then
 		 pset(b.x, b.y, 15)
@@ -78,7 +81,7 @@ function fire_bullet()
 		if not b.live then
 		 b.live = true
 		 b.x = 64 - sin(c_angle) * 8
-		 b.y = 128 - cos(c_angle) * 8
+		 b.y = gun_pivot_y - cos(c_angle) * 8
 		 b.xvel = -sin(c_angle) * 4
 		 b.yvel = -cos(c_angle) * 4
 		 sfx(0)
@@ -98,7 +101,8 @@ chopper = {
 	x = 0,
 	y = 0,
 	facing = 1,
-	drop_delay = 0
+	drop_x = 0,
+	dropped = false
 }
 
 chopper.__index = chopper
@@ -110,7 +114,13 @@ max_choppers = 2
 function chopper:create()
 	local ch = {}
 	setmetatable(ch, chopper)
-	ch.drop_delay = flr(rnd(30)) + 10
+	
+	-- dont drop on turret
+	if flr(rnd(2)) == 0 then
+	 ch.drop_x = flr(rnd(48))
+	else
+  ch.drop_x = flr(rnd(40)) + 74
+	end
 	return ch
 end
 
@@ -118,19 +128,20 @@ function chopper:update()
 	self.anim_index = 1 - self.anim_index
 	if self.facing == 0 then
 	 self.x = self.x - chopper_speed
+	 if self.x < self.drop_x and not self.dropped then
+    spawn_paratrooper(self.x, self.y + 16)
+    self.dropped = true
+	 end	 
 	else
 	 self.x = self.x + chopper_speed
+	 if self.x > self.drop_x and not self.dropped then
+    spawn_paratrooper(self.x, self.y + 16)
+    self.dropped = true
+	 end	 
 	end
 	
 	if self.x < -16 or self.x > 128 then
 	 return false
-	end
-	
-	if self.drop_delay > 0 then
-  self.drop_delay = self.drop_delay - 1
-	elseif self.drop_delay == 0 then
-  self.drop_delay = -1
-  spawn_paratrooper(self.x, self.y + 16)
 	end
 
  return true
@@ -278,7 +289,8 @@ paratrooper = {
 
 paratrooper.__index = paratrooper
 ptroops = {}
-landed_troops = 0
+left_landed = 0
+right_landed = 0
 
 function paratrooper:create(x, y)
 	local pt = {}
@@ -314,8 +326,12 @@ function update_paras()
    end
   elseif not pt.landed then
    pt.landed = true
-   landed_troops = landed_troops + 1
-   if landed_troops == 4 then
+   if pt.x < 64 then
+    left_landed = left_landed + 1
+   else
+    right_landed = right_landed + 1
+   end
+   if left_landed == 4 or right_landed == 4 then
     game_over = true
    end
   end
