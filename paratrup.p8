@@ -12,7 +12,7 @@ score = 0
 gun_pivot_y = 115
 
 function _init()
-	for i=1,10,1 do
+	for i = 1, 10 do
 		bullets[i] = {
 		 live = false,
 		 x = 0,
@@ -194,8 +194,8 @@ function update_choppers()
 end
 
 function draw_choppers()
-	for _, ch in pairs(choppers) do
-		ch:draw()
+	for i = 1, #choppers do 
+		choppers[i]:draw()
 	end
 end
 
@@ -230,7 +230,6 @@ function respawn_chopper()
 	 respawn_delay = -1
 	end 
 end
-
 
 -->8
 -- wreckage
@@ -279,12 +278,18 @@ end
 
 -->8
 -- paratroopers
+para_state = {
+ initial = 1,
+ deployed = 2,
+ landed = 3,
+ falling = 4 -- chute shot off
+}
+
 paratrooper = {
  x = 0,
  y = 0,
  para_delay = 0,
- para_deployed = false,
- landed = false
+ state = para_state.initial,
 }
 
 paratrooper.__index = paratrooper
@@ -310,22 +315,25 @@ end
 function update_paras()
 	for i = #ptroops, 1, -1 do
   local pt = ptroops[i]
-  if not pt.para_deployed then
+  if pt.state == para_state.initial then
    if pt.para_delay > 0 then
     pt.para_delay = pt.para_delay - 1
    else
-    pt.para_deployed = true
+    pt.state = para_state.deployed
    end
   end
   
   if pt.y < 120 then
-   if pt.para_deployed then
+   if pt.state == para_state.deployed then
     pt.y += 1
    else
     pt.y += 3
    end
-  elseif not pt.landed then
-   pt.landed = true
+  elseif pt.state == para_state.falling then
+   -- crater
+   del(ptroops, pt)
+  elseif pt.state != para_state.landed then
+   pt.state = para_state.landed
    if pt.x < 64 then
     left_landed = left_landed + 1
    else
@@ -338,10 +346,18 @@ function update_paras()
 
   -- check bullet collisions  
  	for _, b in pairs(bullets) do
-	 	if b.live and b.x >= pt.x and b.y >= pt.y and b.x < pt.x + 8 and b.y < pt.y + 8 then
-    del(ptroops, pt)
-    score = score + 5
-    sfx(2)
+	 	if b.live and b.x >= pt.x and b.x < pt.x + 8 and b.y > pt.y - 16 and b.y < pt.y + 8 then
+	 	 if pt.state == para_state.deployed and b.y < pt.y then
+	 	  -- struck the chute
+	 	  pt.state = para_state.falling
+	 	  b.live = false
+	 	 elseif b.y >= pt.y then
+	 	  -- on the body 
+	 	  b.live = false
+	    del(ptroops, pt)
+	    score = score + 5
+	    sfx(2)
+	 	 end
 	  end
 	 end
 	 
@@ -360,7 +376,7 @@ function draw_paras()
 	for i = #ptroops, 1, -1 do
 	 local pt = ptroops[i]
 		spr(22, pt.x, pt.y)
-		if pt.para_deployed and not pt.landed then
+		if pt.state == para_state.deployed then
 		 spr(6, pt.x, pt.y - 8)
 		end
 	end
@@ -385,5 +401,5 @@ __gfx__
 00000000000000000000000000000000000000000000000000700700000000000000000000000000000000000000000000000000000000000000000000000000
 __sfx__
 000100003805000000220002b050000000400000000250500500001000000001e0500000000000000001805000000000000400012050000000000000000000000000000000000000000000000000000000000000
-00100000386302e620176201060009600026000060018600176001760016600156000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-001100001905012050170500d0500d000270000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000d0000206301b620176200e61000610026000060018600176001760016600156000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000900001905012050170500d0500d000270000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
