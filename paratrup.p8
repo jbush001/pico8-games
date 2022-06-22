@@ -287,6 +287,7 @@ end
 --  if a paratrooper lands on another, stack
 --  when four paratroopers are on a side, animate them blowing up turett
 --  if a paratrooper falls on another one, kill the one on the ground
+--  show a skull when a paratrooper hits the ground and dies
 
 para_state = {
  initial = 1,
@@ -298,7 +299,7 @@ para_state = {
 paratrooper = {
  x = 0,
  y = 0,
- para_delay = 0,
+ chute_delay = 0,
  state = para_state.initial,
 }
 
@@ -312,8 +313,74 @@ function paratrooper:create(x, y)
 	setmetatable(pt, paratrooper)
 	pt.x = x
 	pt.y = y
-	pt.para_delay = 5 + flr(rnd(10))
+	pt.chute_delay = 5 + flr(rnd(10))
 	return pt
+end
+
+function paratrooper:update()
+ if self.state == para_state.initial then
+  if self.chute_delay > 0 then
+   self.chute_delay = self.chute_delay - 1
+  else
+   self.state = para_state.deployed
+  end
+ end
+ 
+ if self.y < 120 then
+  if self.state == para_state.deployed then
+   self.y += 1
+  else
+   self.y += 3
+  end
+ elseif self.state == para_state.falling then
+  -- crater
+  return false
+ elseif self.state != para_state.landed then
+  self.state = para_state.landed
+  if self.x < 64 then
+   left_landed = left_landed + 1
+  else
+   right_landed = right_landed + 1
+  end
+  if left_landed == 4 or right_landed == 4 then
+   game_over = true
+  end
+ end
+
+ -- check bullet collisions  
+	for _, b in pairs(bullets) do
+ 	if b.live and b.x >= self.x and b.x < self.x + 8 and b.y > self.y - 16 and b.y < self.y + 8 then
+ 	 if self.state == para_state.deployed and b.y < self.y then
+ 	  -- struck the chute
+ 	  self.state = para_state.falling
+ 	  b.live = false
+ 	 elseif b.y >= self.y then
+ 	  -- on the body 
+ 	  b.live = false
+    score = score + 5
+    sfx(2)
+    return false
+ 	 end
+  end
+ end
+ 
+ -- wreckage can kill paratroops
+ for i = 1, #wchunks do
+  local wc = wchunks[i]
+  if wc.x < self.x + 8 and self.x < self.x + 8 and self.y < wc.y + 8 and wc.y < self.y + 8 then
+   sfx(2)
+   return false
+  end
+ end	  
+ 
+ return true
+end
+
+function paratrooper:draw()
+	spr(22, self.x, self.y)
+	if self.state == para_state.deployed then
+	 spr(6, self.x, self.y - 8)
+	end
 end
 
 function spawn_paratrooper(x, y)
@@ -324,71 +391,15 @@ end
 
 function update_paras()
 	for i = #ptroops, 1, -1 do
-  local pt = ptroops[i]
-  if pt.state == para_state.initial then
-   if pt.para_delay > 0 then
-    pt.para_delay = pt.para_delay - 1
-   else
-    pt.state = para_state.deployed
-   end
-  end
-  
-  if pt.y < 120 then
-   if pt.state == para_state.deployed then
-    pt.y += 1
-   else
-    pt.y += 3
-   end
-  elseif pt.state == para_state.falling then
-   -- crater
-   del(ptroops, pt)
-  elseif pt.state != para_state.landed then
-   pt.state = para_state.landed
-   if pt.x < 64 then
-    left_landed = left_landed + 1
-   else
-    right_landed = right_landed + 1
-   end
-   if left_landed == 4 or right_landed == 4 then
-    game_over = true
-   end
-  end
-
-  -- check bullet collisions  
- 	for _, b in pairs(bullets) do
-	 	if b.live and b.x >= pt.x and b.x < pt.x + 8 and b.y > pt.y - 16 and b.y < pt.y + 8 then
-	 	 if pt.state == para_state.deployed and b.y < pt.y then
-	 	  -- struck the chute
-	 	  pt.state = para_state.falling
-	 	  b.live = false
-	 	 elseif b.y >= pt.y then
-	 	  -- on the body 
-	 	  b.live = false
-	    del(ptroops, pt)
-	    score = score + 5
-	    sfx(2)
-	 	 end
-	  end
+  if not ptroops[i]:update() then
+   del(ptroops, ptroops[i])
 	 end
-	 
-	 -- wreckage can kill paratroops
-  for i = 1, #wchunks do
-   local wc = wchunks[i]
-   if wc.x < pt.x + 8 and pt.x < wc.x + 8 and pt.y < wc.y + 8 and wc.y < pt.y + 8 then
-    del(ptroops, pt)
-    sfx(2)
-   end
-  end	  
 	end
 end
 
 function draw_paras()
 	for i = #ptroops, 1, -1 do
-	 local pt = ptroops[i]
-		spr(22, pt.x, pt.y)
-		if pt.state == para_state.deployed then
-		 spr(6, pt.x, pt.y - 8)
-		end
+	 ptroops[i]:draw()
 	end
 end
 
