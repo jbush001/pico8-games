@@ -329,8 +329,6 @@ paratrooper = {
 paratrooper.__index = paratrooper
 ptroops = {}
 landed = {}
-left_landed = 0
-right_landed = 0
 
 function paratrooper:create(x, y)
 	local pt = {}
@@ -371,7 +369,7 @@ function paratrooper:update()
   -- crater
   sfx(2)
 	 for j = 1, #ptroops do
-	  if ptroops[j].x == self.x and ptroops[j] != self then
+	  if ptroops[j].x == self.x and ptroops[j] != self and ptroops[j].state == para_state.landed then
 	   ptroops[j].state = para_state.crushed
 	  end
 	 end
@@ -382,12 +380,8 @@ function paratrooper:update()
  elseif self.state != para_state.landed then
   self.state = para_state.landed
   landed[flr(self.x / 8)] = self.y
-  if self.x < 64 then
-   left_landed = left_landed + 1
-  else
-   right_landed = right_landed + 1
-  end
-  if left_landed == 4 or right_landed == 4 then
+
+  if check_ground_count() then
    trigger_game_over()
   end
  end
@@ -446,6 +440,22 @@ function draw_troops()
 	for i = #ptroops, 1, -1 do
 	 ptroops[i]:draw()
 	end
+end
+
+function check_ground_count()
+ left_count = 0
+ right_count = 0
+ for j = 1, #ptroops do
+  if ptroops[j].state == para_state.landed then
+   if ptroops[j].x < 64 then
+    left_count = left_count + 1
+   else 
+    right_count = right_count + 1
+   end
+  end
+ end
+
+ return left_count >= 4 or right_count >= 4
 end
 
 __gfx__
