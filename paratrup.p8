@@ -5,14 +5,18 @@ __lua__
 -- todo:
 --   make cannon barrel thicker
 
+game_state_t = {
+  gs_playing = 1,
+  gs_game_over = 2
+}
 
 c_angle = 0
 max_angle = 0.15
 angle_step = max_angle / 16
 bullets = {}
-game_over = false
 score = 0
 gun_pivot_y = 115
+game_state = game_state_t.gs_playing
 
 function _init()
 	for i = 1, 10 do
@@ -24,12 +28,13 @@ function _init()
 		 yvel = 0,
 		}
 	end
-	
+
+ game_state = game_state_t.gs_playing	
 	init_choppers()
 end
 
 function _update() 
- if not game_over then
+ if game_state != game_state_t.gs_game_over then
 	 if btn(0) and c_angle > -max_angle then
 	 	c_angle = c_angle - angle_step
 	 elseif btn(1) and c_angle < max_angle then
@@ -64,7 +69,7 @@ function _draw()
  print(score, 5, 5, 7)
  line(0, 127, 127, 127, 5)
 
- if not game_over then
+ if game_state != game_state_t.gs_game_over then
 		line(64, gun_pivot_y, 64 - sin(c_angle) * 8, gun_pivot_y - cos(c_angle) * 8, 15)
 		circfill(64, gun_pivot_y, 4)
  end
@@ -80,14 +85,14 @@ function _draw()
 	draw_choppers()
 	draw_wreckage()
 	draw_troops()
-	if game_over then
+	if game_state == game_state_t.gs_game_over then
 	 print("game over", 48, 60)
 	end
 end
 
 function trigger_game_over()
- if not game_over then
-	 game_over = true
+ if game_state == game_state_t.gs_playing then
+  game_state = game_state_t.gs_game_over
 	 for i = 1, 5 do
 		 spawn_wreckage(64, 105, rnd(5) - 3, -rnd(5) - 2)
 	 end
@@ -115,6 +120,7 @@ end
 -- choppers
 -- todo:
 --  fix so these can't overlap
+--  debris can destroy choppers
 
 chopper = {
 	anim_index = 0,
@@ -174,13 +180,15 @@ function chopper:update()
 	self.anim_index = 1 - self.anim_index
 	if self.facing == 0 then
 	 self.x = self.x - chopper_speed
-	 if self.x < self.drop_x and not self.dropped then
-    spawn_paratrooper(self.drop_x, self.y + 16)
-    self.dropped = true
+ if self.x < self.drop_x 
+	 and not self.dropped then
+   spawn_paratrooper(self.drop_x, self.y + 16)
+   self.dropped = true
 	 end	 
 	else
 	 self.x = self.x + chopper_speed
-	 if self.x > self.drop_x and not self.dropped then
+	 if self.x > self.drop_x 
+	  and not self.dropped then
     spawn_paratrooper(self.drop_x, self.y + 16)
     self.dropped = true
 	 end	 
@@ -230,7 +238,7 @@ function kill_chopper(ch)
 end
 
 function respawn_chopper()
- if game_over then
+ if game_state != game_state_t.gs_playing then
   return
  end
  ch = chopper:create()
@@ -310,6 +318,7 @@ end
 -- todo:
 --  when four paratroopers are on a side, animate them blowing up turett
 --  show a skull when a paratrooper hits the ground and dies
+--  show smaller wrecakge for killed paratroopers
 
 para_state = {
  initial = 1,
@@ -406,7 +415,10 @@ function paratrooper:update()
  -- wreckage can kill paratroops
  for i = 1, #wchunks do
   local wc = wchunks[i]
-  if wc.x < self.x + 8 and self.x < self.x + 8 and self.y < wc.y + 8 and wc.y < self.y + 8 then
+  if wc.x < self.x + 8 
+   and wc.x + 8 > self.x 
+   and wc.y + 8 > self.y 
+   and wc.y < self.y + 8 then
    sfx(2)
    return false
   end
@@ -423,7 +435,7 @@ function paratrooper:draw()
 end
 
 function spawn_paratrooper(x, y)
- if not game_over then
+ if game_state == game_state_t.gs_playing then
   add(ptroops, paratrooper:create(x, y))
  end
 end
