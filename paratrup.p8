@@ -63,9 +63,14 @@ function _draw()
  cls(12)
  print(score, 5, 5, 7)
  line(0, 127, 127, 127, 5)
-	line(64, gun_pivot_y, 64 - sin(c_angle) * 8, gun_pivot_y - cos(c_angle) * 8, 15)
-	circfill(64, gun_pivot_y, 4)
+
+ if not game_over then
+		line(64, gun_pivot_y, 64 - sin(c_angle) * 8, gun_pivot_y - cos(c_angle) * 8, 15)
+		circfill(64, gun_pivot_y, 4)
+ end
+
 	rectfill(54, gun_pivot_y, 74, 128, 5)
+
 	for _, b in pairs(bullets) do
 		if b.live then
 		 pset(b.x, b.y, 15)
@@ -77,6 +82,15 @@ function _draw()
 	draw_troops()
 	if game_over then
 	 print("game over", 48, 60)
+	end
+end
+
+function trigger_game_over()
+ if not game_over then
+	 game_over = true
+	 for i = 1, 5 do
+		 spawn_wreckage(64, 105, rnd(5) - 3, -rnd(5) - 2)
+	 end
 	end
 end
 
@@ -150,7 +164,8 @@ function chopper:update()
 				spawn_wreckage(
 				 self.x + rnd(12), 
 				 self.y + rnd(12), 
-				 xv * (rnd(2) + chopper_speed))
+				 xv * (rnd(2) + chopper_speed),
+				 0)
 			end
 			return false
 		end
@@ -252,12 +267,13 @@ wreckage = {
 wreckage.__index = wreckage
 wchunks = {}
 
-function wreckage:create(x, y, xv, sprite)
+function wreckage:create(x, y, xv, yv, sprite)
 	local wr = {}
 	setmetatable(wr, wreckage)
 	wr.x = x
 	wr.y = y
 	wr.xvel = xv
+	wr.yvel = yv
 	if sprite == 0 then
  	wr.sprite = 5
  else
@@ -266,8 +282,8 @@ function wreckage:create(x, y, xv, sprite)
 	return wr
 end
 
-function spawn_wreckage(x, y, xv)
-	add(wchunks, wreckage:create(x, y, xv, flr(rnd(2))))
+function spawn_wreckage(x, y, xv, yv)
+	add(wchunks, wreckage:create(x, y, xv, yv, flr(rnd(2))))
 end
 
 function update_wreckage()
@@ -372,7 +388,7 @@ function paratrooper:update()
    right_landed = right_landed + 1
   end
   if left_landed == 4 or right_landed == 4 then
-   game_over = true
+   trigger_game_over()
   end
  end
 
