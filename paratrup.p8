@@ -56,12 +56,13 @@ function _update()
 	
 	update_choppers()
 	update_wreckage()
-	update_paras()
+	update_troops()
 end
 
 function _draw()
  cls(12)
- print(score, 5, 5)
+ print(score, 5, 5, 7)
+ line(0, 127, 127, 127, 5)
 	line(64, gun_pivot_y, 64 - sin(c_angle) * 8, gun_pivot_y - cos(c_angle) * 8, 15)
 	circfill(64, gun_pivot_y, 4)
 	rectfill(54, gun_pivot_y, 74, 128, 5)
@@ -73,7 +74,7 @@ function _draw()
 
 	draw_choppers()
 	draw_wreckage()
-	draw_paras()
+	draw_troops()
 	if game_over then
 	 print("game over", 48, 60)
 	end
@@ -126,6 +127,7 @@ function chopper:create()
 	else
   ch.drop_x = 74 + (flr(rnd(5)) * 8) + 2
 	end
+
 	return ch
 end
 
@@ -290,16 +292,15 @@ end
 -->8
 -- paratroopers
 -- todo:
---  if a paratrooper lands on another, stack
 --  when four paratroopers are on a side, animate them blowing up turett
---  if a paratrooper falls on another one, kill the one on the ground
 --  show a skull when a paratrooper hits the ground and dies
 
 para_state = {
  initial = 1,
  deployed = 2,
  landed = 3,
- falling = 4 -- chute shot off
+ falling = 4, -- chute shot off
+ crushed = 5  -- someone landed on
 }
 
 paratrooper = {
@@ -311,6 +312,7 @@ paratrooper = {
 
 paratrooper.__index = paratrooper
 ptroops = {}
+landed = {}
 left_landed = 0
 right_landed = 0
 
@@ -324,6 +326,12 @@ function paratrooper:create(x, y)
 end
 
 function paratrooper:update()
+ -- need to clean up here to keep list
+ -- intact.
+ if self.state == para_state.crushed then
+  return false
+ end
+
  if self.state == para_state.initial then
   if self.chute_delay > 0 then
    self.chute_delay = self.chute_delay - 1
@@ -331,8 +339,13 @@ function paratrooper:update()
    self.state = para_state.deployed
   end
  end
- 
- if self.y < 120 then
+
+ gnd_level = landed[flr(self.x / 8)]
+ if gnd_level == nil then
+  gnd_level = 128
+ end
+
+ if self.y + 8 < gnd_level then
   if self.state == para_state.deployed then
    self.y += 1
   else
@@ -340,9 +353,19 @@ function paratrooper:update()
   end
  elseif self.state == para_state.falling then
   -- crater
+  sfx(2)
+	 for j = 1, #ptroops do
+	  if ptroops[j].x == self.x and ptroops[j] != self then
+	   ptroops[j].state = para_state.crushed
+	  end
+	 end
+	 
+	 del(landed, flr(self.x / 8))
+  
   return false
  elseif self.state != para_state.landed then
   self.state = para_state.landed
+  landed[flr(self.x / 8)] = self.y
   if self.x < 64 then
    left_landed = left_landed + 1
   else
@@ -395,7 +418,7 @@ function spawn_paratrooper(x, y)
  end
 end
 
-function update_paras()
+function update_troops()
 	for i = #ptroops, 1, -1 do
   if not ptroops[i]:update() then
    del(ptroops, ptroops[i])
@@ -403,7 +426,7 @@ function update_paras()
 	end
 end
 
-function draw_paras()
+function draw_troops()
 	for i = #ptroops, 1, -1 do
 	 ptroops[i]:draw()
 	end
@@ -428,5 +451,6 @@ __gfx__
 00000000000000000000000000000000000000000000003000300300000000000000000000000000000000000000000000000000000000000000000000000000
 __sfx__
 000100003805000000220002b050000000400000000250500500001000000001e0500000000000000001805000000000000400012050000000000000000000000000000000000000000000000000000000000000
-000d0000206301b620176200e61000610026000060018600176001760016600156000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000900001905012050170500d0500d000270000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000900001365009640056200550008600026001160008500096001760005600156000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000900000f0500a05008050030000d000270000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000038150371500000038150000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
