@@ -1,5 +1,5 @@
 pico-8 cartridge // http://www.pico-8.com
-version 29
+version 36
 __lua__
 -- cannon control and main loop
 -- todo:
@@ -383,8 +383,8 @@ function paratrooper:update()
 	  end
 	 end
 	 
-	 del(landed, flr(self.x / 8))
-  
+	 -- reset landing height
+	 landed[flr(self.x / 8)] = nil
   return false
  elseif self.state != para_state.landed then
   self.state = para_state.landed
