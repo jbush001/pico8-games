@@ -1,5 +1,5 @@
 pico-8 cartridge // http://www.pico-8.com
-version 29
+version 36
 __lua__
 -- defines/constants
 flg_solid=0 -- cannot walk through
@@ -72,10 +72,12 @@ function player:update()
 			mset(doorx, doory, 28)
 			mset(doorx + 1, doory, 29)
 			sfx(snd_door)
+			display_caption("you unlocked the door")
 		elseif doortile == 63 then
 			mset(doorx - 1, doory, 28)
 			mset(doorx, doory, 29)
 			sfx(snd_door)
+			display_caption("you unlocked the door")
 		end
 	end
 end
@@ -251,15 +253,17 @@ end
 item = {
 	held = false,
 	is_key = false,
+	description = ""
 }
 item.__index = item
 
-function item:create(x, y, sprite)
+function item:create(x, y, sprite, description)
 	i = {}
 	setmetatable(i, item)
 	i.x = x
 	i.y = y
 	i.sprite = sprite
+	i.description = description
 	return i
 end
 
@@ -269,6 +273,7 @@ function item:hit()
 		plyr.has_key = true
 	end
 	sfx(snd_grab_item)
+	display_caption("you got the " .. self.description)
 end
 
 items = {}
@@ -300,6 +305,8 @@ state_over = 3
 camera_x = 0
 camera_y = 0
 display_menu = false
+caption_text = ""
+caption_delay = 0
 old_menub_state = false -- used to make one-shot
 game_state = state_intro
 screen_timer = 0
@@ -318,9 +325,9 @@ function restart()
 	npcs = {}
 	items = {}
 
- add(items, item:create(64, 34, 40))
-	add(items, item:create(300, 38, 41))
-	add(items, item:create(250, 34, 32))
+ add(items, item:create(64, 34, 40, "pencil"))
+	add(items, item:create(300, 38, 41, "report card"))
+	add(items, item:create(250, 34, 32, "key"))
 	items[3].is_key = true
 
  -- route for player 1
@@ -412,6 +419,11 @@ function _update()
 	end
 end
 
+function display_caption(text) 
+	caption_text = text
+	caption_delay = 30
+end
+
 function center_text(s)
 	print(s, 64 -  #s / 2 * 4, 62, 7)
 end
@@ -458,6 +470,14 @@ function draw_game_screen()
 					end
 			end
 		end
+	end
+
+	if caption_delay > 0 then
+	 color(0)
+	 rectfill(camera_x, camera_y, camera_x + #caption_text * 4 + 1, camera_y + 5)
+	 color(7)
+		print(caption_text, camera_x, camera_y)
+		caption_delay = caption_delay - 1
 	end
 end
 
