@@ -325,20 +325,40 @@ function restart()
 	npcs = {}
 	items = {}
 
- add(items, item:create(64, 34, 40, "pencil"))
-	add(items, item:create(300, 38, 41, "report card"))
-	add(items, item:create(250, 34, 32, "key"))
+ add(items, item:create(26 * 8, 5 * 8, 40, "pencil"))
+	add(items, item:create(300, 45, 41, "report card"))
+	add(items, item:create(53 * 8, 8 * 8, 32, "key"))
 	items[3].is_key = true
 
- -- route for player 1
+ -- route for player 1 (janitor)
+ -- emptying trash in classrooms
 	local p1_rt = {
-		{x=128, y=40, d=0},
-		{x=128, y=160, d=30},
-		{x=128, y=40, d=0},
-		{x=90, y=40, d=60}
+		{x=16 * 8, y=18 * 8, d=0},
+		
+		-- room 1
+		{x=16 * 8, y=14 * 8, d=0},
+		{x=12 * 8, y=14 * 8, d=40},
+		{x=16 * 8, y=14 * 8, d=0},
+
+		-- room 2
+		{x=16 * 8, y=5 * 8, d=0},
+		{x=12 * 8, y=5 * 8, d=40},
+
+		-- room 3
+		{x=22 * 8, y=5 * 8, d=40},
+		{x=18 * 8, y=5 * 8, d=0},
+
+		-- room 4
+		{x=18 * 8, y=14 * 8, d=0},
+		{x=22 * 8, y=14 * 8, d=40},
+		{x=18 * 8, y=14 * 8, d=0},
+
+
 	}
 
- -- route for player 2
+	add(npcs, npc:create(54, p1_rt))
+
+ -- route for player 2 (principal)
 	local p2_rt = {
 		{x=300, y=120, d=60},
 		{x=300, y=155, d=10},
@@ -346,9 +366,9 @@ function restart()
 		{x=300, y=155, d=10}
 	}
 
-	add(npcs, npc:create(54, p1_rt))
 	add(npcs, npc:create(64, p2_rt))
-	plyr = player:create(32, 32)
+
+	plyr = player:create(26, 56)
 end
 
 function menub_pressed()
