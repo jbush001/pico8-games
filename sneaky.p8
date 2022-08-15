@@ -5,15 +5,11 @@ __lua__
 flg_solid=0 -- cannot walk through
 flg_draw_over=1 -- player walks under
 flg_transparent=2 -- npc can see through
-flg_door=3 -- needs key
 
 snd_grab_item=0
 snd_alert=1
 snd_door=4
 
-function can_move(x, y)
-	return not fget(mget(x / 8, y / 8), flg_solid)
-end
 
 -->8
 -- player
@@ -35,20 +31,53 @@ function player:create(x, y)
 	return pl
 end
 
+function unlock_door(x, y)
+		local doorx = x / 8
+		local doory = y / 8
+		local doortile = mget(doorx, doory)
+		if doortile == 62 then
+			mset(doorx, doory, 28)
+			mset(doorx + 1, doory, 29)
+		elseif doortile == 63 then
+			mset(doorx - 1, doory, 28)
+			mset(doorx, doory, 29)
+		end
+end
+
+function try_move(x, y, has_key)
+ tile = mget(x / 8, y / 8)
+ if not fget(tile, flg_solid) then
+  return true
+ end
+ 
+ if tile == 62 or tile == 63 then
+  if has_key then
+   unlock_door(x, y)
+			sfx(snd_door)
+			display_caption("you unlocked the door")
+   return true
+  else
+ 	 display_caption("the door is locked") 
+  end
+ end
+ 
+ return false
+end
+
 function player:update()
  moving = false
-	if btn(0) and can_move(self.x, self.y + 7) then
+	if btn(0) and try_move(self.x, self.y + 7, self.has_key) then
 		self.x = self.x - 1
 		self.frame = 1
 		self.x_mirror = true
-	elseif btn(1) and can_move(self.x + 8, self.y + 7) then
+	elseif btn(1) and try_move(self.x + 8, self.y + 7, self.has_key) then
 	 self.x = self.x + 1
 		self.frame = 1
 		self.x_mirror = false
-	elseif btn(2) and can_move(self.x + 4, self.y + 6) then
+	elseif btn(2) and try_move(self.x + 4, self.y + 6, self.has_key) then
 		self.y = self.y - 1
 		self.frame = 5
-	elseif btn(3) and can_move(self.x + 4, self.y + 8) then
+	elseif btn(3) and try_move(self.x + 4, self.y + 8, self.has_key) then
 		self.y = self.y + 1
 		self.frame = 3
 	else
@@ -60,24 +89,6 @@ function player:update()
 		self.anim_count = (self.anim_count + 1) % 12
 		if self.anim_count >= 6 then
 			self.frame = self.frame + 1
-		end
-	end
-
-	-- check for unlocking doors
-	if self.has_key then
-		local doorx = (self.x + 4) / 8
-		local doory = (self.y + 4) / 8
-		local doortile = mget(doorx, doory)
-		if doortile == 62 then
-			mset(doorx, doory, 28)
-			mset(doorx + 1, doory, 29)
-			sfx(snd_door)
-			display_caption("you unlocked the door")
-		elseif doortile == 63 then
-			mset(doorx - 1, doory, 28)
-			mset(doorx, doory, 29)
-			sfx(snd_door)
-			display_caption("you unlocked the door")
 		end
 	end
 end
